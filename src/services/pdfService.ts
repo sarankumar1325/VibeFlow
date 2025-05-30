@@ -19,6 +19,14 @@ export interface PDFExtractionResult {
   error?: string;
 }
 
+interface PDFMetadataInfo {
+  Title?: string;
+  Author?: string;
+  Subject?: string;
+  Keywords?: string;
+  [key: string]: any;
+}
+
 export class PDFService {
   static async extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
     try {
@@ -54,13 +62,16 @@ export class PDFService {
       console.log('🎉 PDF extraction completed successfully');
       console.log('📊 Total text length:', fullText.length, 'characters');
       
+      // Properly type the metadata info
+      const metadataInfo = metadata.info as PDFMetadataInfo;
+      
       return {
         text: fullText.trim(),
         metadata: {
-          title: metadata.info?.Title || 'Untitled Document',
-          author: metadata.info?.Author || 'Unknown Author',
-          subject: metadata.info?.Subject || '',
-          keywords: metadata.info?.Keywords || '',
+          title: metadataInfo?.Title || 'Untitled Document',
+          author: metadataInfo?.Author || 'Unknown Author',
+          subject: metadataInfo?.Subject || '',
+          keywords: metadataInfo?.Keywords || '',
           pageCount: pdf.numPages,
           fileSize: file.size,
           fileName: file.name,
