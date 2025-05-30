@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,14 +17,14 @@ import {
   Zap
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { AITask, AIProcessingResult } from '@/services/enhancedGeminiService';
+import { Task, AIProcessingResult } from '@/services/enhancedGeminiService';
 
 interface TaskViewerProps {
   result: AIProcessingResult;
 }
 
 const TaskViewer: React.FC<TaskViewerProps> = ({ result }) => {
-  const [tasks, setTasks] = useState<AITask[]>(result.tasks);
+  const [tasks, setTasks] = useState<Task[]>(result.tasks);
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [editContent, setEditContent] = useState('');
   const { toast } = useToast();
