@@ -1,9 +1,11 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
-import 'pdfjs-dist/build/pdf.worker.entry';
 
-// Set worker source
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
+// Configure worker for Vite environment
+pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.js',
+  import.meta.url
+).toString();
 
 export interface PDFExtractionResult {
   text: string;
@@ -20,6 +22,16 @@ export interface PDFExtractionResult {
   error?: string;
 }
 
+interface PDFMetadata {
+  info?: {
+    Title?: string;
+    Author?: string;
+    Subject?: string;
+    Keywords?: string;
+    [key: string]: any;
+  };
+}
+
 export class PDFService {
   static async extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
     try {
@@ -34,8 +46,8 @@ export class PDFService {
       
       console.log('📚 PDF loaded successfully, pages:', pdfDoc.numPages);
       
-      // Extract metadata
-      const metadata = await pdfDoc.getMetadata();
+      // Extract metadata with proper typing
+      const metadata = await pdfDoc.getMetadata() as PDFMetadata;
       const title = metadata?.info?.Title || 'Untitled Document';
       const author = metadata?.info?.Author || 'Unknown Author';
       const subject = metadata?.info?.Subject || '';
