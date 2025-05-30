@@ -14,7 +14,7 @@ const Index = () => {
   const [extractedDocument, setExtractedDocument] = useState<PDFExtractionResult | null>(null);
   const [aiResult, setAiResult] = useState<AIProcessingResult | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('AIzaSyBHiSdm1ZUwlyEM3tNt5BX9cuvwuMFwRZI');
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
   const { toast } = useToast();
 

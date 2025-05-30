@@ -2,143 +2,71 @@
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 
-export interface TaskMetadata {
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  complexity: 'simple' | 'moderate' | 'complex' | 'expert';
-  estimatedHours: number;
-  assigneeType: 'human' | 'ai' | 'either';
-  skills: string[];
-  dependencies: string[];
-  riskLevel: 'low' | 'medium' | 'high';
-  phase: string;
-}
-
-export interface AITask {
+export interface Task {
   id: string;
   title: string;
   description: string;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  assignee: 'human' | 'ai' | 'team';
+  complexity: number;
+  timeEstimate: string;
+  phase: string;
+  risks: string[];
   acceptanceCriteria: string[];
-  metadata: TaskMetadata;
-  markdown: string;
+  dependencies: string[];
+  status: 'todo' | 'in-progress' | 'done';
 }
 
 export interface AIProcessingResult {
-  tasks: AITask[];
+  tasks: Task[];
   summary: string;
-  totalEstimatedHours: number;
-  riskAssessment: string;
-  recommendations: string[];
+  metadata: {
+    totalTasks: number;
+    phases: string[];
+    estimatedDuration: string;
+    complexityScore: number;
+  };
   success: boolean;
   error?: string;
 }
 
 export class EnhancedGeminiService {
   private model: ChatGoogleGenerativeAI;
-  
+
   constructor(apiKey: string) {
     this.model = new ChatGoogleGenerativeAI({
-      apiKey,
-      modelName: 'gemini-1.5-pro',
-      temperature: 0.7,
+      model: "gemini-2.0-flash-exp",
+      apiKey: apiKey,
+      temperature: 0.3,
       maxOutputTokens: 8192,
     });
   }
 
-  private generateSystemPrompt(): string {
-    return `You are VibeFlow, an elite AI project intelligence platform designed to transform complex project documents into structured, actionable tasks. You possess deep understanding of software development, project management, and technical architecture.
-
-CORE CAPABILITIES:
-- Analyze project documents with sophisticated context awareness
-- Generate high-quality, executable tasks with rich metadata
-- Understand technical requirements, dependencies, and risk factors
-- Optimize task assignments between human and AI capabilities
-- Provide strategic project insights and recommendations
-
-TASK GENERATION REQUIREMENTS:
-1. Create detailed, actionable tasks with clear titles and descriptions
-2. Include comprehensive acceptance criteria (3-5 criteria per task)
-3. Assign realistic priority levels (low/medium/high/critical)
-4. Estimate complexity (simple/moderate/complex/expert) and hours accurately
-5. Identify required skills and technical dependencies
-6. Assess risk levels and suggest mitigation strategies
-7. Organize tasks into logical execution phases
-8. Determine optimal assignee type (human/ai/either)
-
-METADATA STRUCTURE:
-- Priority: Based on business impact and blocking dependencies
-- Complexity: Technical difficulty and skill requirements
-- EstimatedHours: Realistic time estimates for completion
-- AssigneeType: Human for creative/strategic work, AI for routine/technical tasks
-- Skills: Required technical and domain expertise
-- Dependencies: Other tasks or external requirements
-- RiskLevel: Potential blockers and complexity factors
-- Phase: Logical grouping for execution planning
-
-OUTPUT FORMAT:
-Generate tasks in structured markdown format with embedded metadata:
-
-## Task: [Clear, Action-Oriented Title]
-**Priority:** [low/medium/high/critical] | **Complexity:** [simple/moderate/complex/expert] | **Hours:** [number] | **Assignee:** [human/ai/either]
-
-### Description
-[Detailed task description with context and requirements]
-
-### Acceptance Criteria
-- [ ] [Specific, measurable criteria]
-- [ ] [Testing requirements]
-- [ ] [Quality standards]
-
-### Skills Required
-- [Technical skill 1]
-- [Domain expertise 2]
-
-### Dependencies
-- [Dependent task or requirement]
-
-### Risk Assessment
-[Potential challenges and mitigation strategies]
-
----
-
-STRATEGIC ANALYSIS:
-Provide project-level insights including:
-- Overall complexity assessment
-- Critical path identification
-- Resource allocation recommendations
-- Risk mitigation strategies
-- Success metrics and milestones
-
-Be precise, actionable, and optimized for both human understanding and AI agent execution.`;
-  }
-
   async processDocument(
-    documentText: string,
-    fileName: string,
+    documentText: string, 
+    fileName: string, 
     projectContext?: string
   ): Promise<AIProcessingResult> {
     try {
-      console.log('🤖 Starting AI processing with Gemini...');
-      console.log('📄 Document length:', documentText.length, 'characters');
+      console.log('🤖 Starting AI processing with Gemini 2.0 Flash...');
       
-      const systemPrompt = this.generateSystemPrompt();
-      const userPrompt = this.generateUserPrompt(documentText, fileName, projectContext);
-      
+      const systemPrompt = this.createSystemPrompt(projectContext);
+      const userPrompt = this.createUserPrompt(documentText, fileName);
+
       const messages = [
         new SystemMessage(systemPrompt),
         new HumanMessage(userPrompt)
       ];
-      
-      console.log('🔄 Sending request to Gemini AI...');
+
+      console.log('📤 Sending request to Gemini...');
       const response = await this.model.invoke(messages);
+      console.log('📥 Received response from Gemini');
+
+      const result = this.parseAIResponse(response.content as string);
       
-      console.log('✅ Received AI response');
-      const aiOutput = response.content as string;
-      
-      // Parse the AI response and extract tasks
-      const result = this.parseAIResponse(aiOutput);
-      
-      console.log('🎉 AI processing completed successfully');
-      console.log('📊 Generated', result.tasks.length, 'tasks');
+      if (result.success) {
+        console.log(`✅ Successfully generated ${result.tasks.length} tasks`);
+      }
       
       return result;
       
@@ -147,177 +75,143 @@ Be precise, actionable, and optimized for both human understanding and AI agent 
       return {
         tasks: [],
         summary: '',
-        totalEstimatedHours: 0,
-        riskAssessment: '',
-        recommendations: [],
+        metadata: {
+          totalTasks: 0,
+          phases: [],
+          estimatedDuration: '0',
+          complexityScore: 0,
+        },
         success: false,
-        error: error instanceof Error ? error.message : 'AI processing failed',
+        error: error instanceof Error ? error.message : 'Unknown error occurred',
       };
     }
   }
 
-  private generateUserPrompt(documentText: string, fileName: string, projectContext?: string): string {
-    return `Analyze the following project document and generate a comprehensive task breakdown:
+  private createSystemPrompt(projectContext?: string): string {
+    return `You are VibeFlow AI, an expert project intelligence system specializing in transforming complex documents into structured, actionable tasks.
+
+CORE CAPABILITIES:
+- Advanced document analysis and interpretation
+- Intelligent task breakdown and prioritization
+- Resource optimization and risk assessment
+- Context-aware project planning
+
+${projectContext ? `PROJECT CONTEXT:\n${projectContext}\n` : ''}
+
+OUTPUT FORMAT: You must respond with a valid JSON object following this exact structure:
+
+{
+  "summary": "Brief overview of the document and generated tasks",
+  "tasks": [
+    {
+      "id": "unique-task-id",
+      "title": "Clear, actionable task title",
+      "description": "Detailed task description with context",
+      "priority": "low|medium|high|critical",
+      "assignee": "human|ai|team",
+      "complexity": 1-10,
+      "timeEstimate": "X hours/days/weeks",
+      "phase": "Phase name",
+      "risks": ["potential risk 1", "potential risk 2"],
+      "acceptanceCriteria": ["criteria 1", "criteria 2"],
+      "dependencies": ["dependency 1", "dependency 2"],
+      "status": "todo"
+    }
+  ],
+  "metadata": {
+    "totalTasks": number,
+    "phases": ["phase1", "phase2"],
+    "estimatedDuration": "total time estimate",
+    "complexityScore": 1-10
+  }
+}
+
+TASK GENERATION RULES:
+1. Break down complex requirements into manageable, specific tasks
+2. Assign realistic priorities based on business impact and dependencies
+3. Estimate complexity (1-10) and time requirements accurately
+4. Identify potential risks and mitigation strategies
+5. Create clear acceptance criteria for each task
+6. Organize tasks into logical phases/milestones
+7. Consider both human and AI capabilities for optimal assignment
+
+RESPOND ONLY WITH THE JSON OBJECT. NO ADDITIONAL TEXT.`;
+  }
+
+  private createUserPrompt(documentText: string, fileName: string): string {
+    return `Analyze the following document and generate intelligent tasks:
 
 DOCUMENT: ${fileName}
-${projectContext ? `PROJECT CONTEXT: ${projectContext}` : ''}
-
-DOCUMENT CONTENT:
+CONTENT:
 ${documentText}
 
-INSTRUCTIONS:
-1. Analyze the document thoroughly to understand project scope, requirements, and objectives
-2. Generate 8-15 detailed, actionable tasks that cover all aspects of the project
-3. Ensure tasks are properly prioritized and sequenced
-4. Include comprehensive metadata for each task
-5. Provide strategic project analysis and recommendations
-
-Focus on creating tasks that are:
-- Specific and actionable
-- Properly scoped (not too large or too small)
-- Technically accurate and realistic
-- Optimized for efficient execution
-- Risk-aware with mitigation strategies
-
-Generate the complete task breakdown in the specified markdown format.`;
+Transform this document into a comprehensive task breakdown following the specified JSON format.`;
   }
 
-  private parseAIResponse(aiOutput: string): AIProcessingResult {
-    console.log('🔍 Parsing AI response...');
-    
-    const tasks: AITask[] = [];
-    let summary = '';
-    let totalEstimatedHours = 0;
-    let riskAssessment = '';
-    let recommendations: string[] = [];
-    
+  private parseAIResponse(content: string): AIProcessingResult {
     try {
-      // Split content into sections
-      const sections = aiOutput.split('---');
+      // Clean the response to ensure it's valid JSON
+      const cleanContent = content.trim().replace(/```json\n?|\n?```/g, '');
       
-      // Process each task section
-      sections.forEach((section, index) => {
-        if (section.trim() && section.includes('## Task:')) {
-          const task = this.parseTask(section.trim(), index);
-          if (task) {
-            tasks.push(task);
-            totalEstimatedHours += task.metadata.estimatedHours;
-          }
-        }
-      });
+      const parsed = JSON.parse(cleanContent);
       
-      // Extract summary and analysis from the end of the response
-      const lastSection = sections[sections.length - 1];
-      if (lastSection.includes('SUMMARY') || lastSection.includes('ANALYSIS')) {
-        summary = this.extractSummary(lastSection);
-        riskAssessment = this.extractRiskAssessment(lastSection);
-        recommendations = this.extractRecommendations(lastSection);
+      // Validate the structure
+      if (!parsed.tasks || !Array.isArray(parsed.tasks)) {
+        throw new Error('Invalid response structure: missing tasks array');
       }
-      
-      console.log('✅ Successfully parsed', tasks.length, 'tasks');
-      
-    } catch (error) {
-      console.error('❌ Error parsing AI response:', error);
-    }
-    
-    return {
-      tasks,
-      summary: summary || 'AI-generated task breakdown completed successfully.',
-      totalEstimatedHours,
-      riskAssessment: riskAssessment || 'Standard project risks apply.',
-      recommendations: recommendations.length > 0 ? recommendations : ['Follow standard project management practices'],
-      success: true,
-    };
-  }
 
-  private parseTask(taskText: string, index: number): AITask | null {
-    try {
-      // Extract title
-      const titleMatch = taskText.match(/## Task: (.+)/);
-      const title = titleMatch?.[1]?.trim() || `Task ${index + 1}`;
-      
-      // Extract metadata from header line
-      const metadataMatch = taskText.match(/\*\*Priority:\*\* (\w+).*\*\*Complexity:\*\* (\w+).*\*\*Hours:\*\* (\d+).*\*\*Assignee:\*\* (\w+)/);
-      
-      const priority = (metadataMatch?.[1] as TaskMetadata['priority']) || 'medium';
-      const complexity = (metadataMatch?.[2] as TaskMetadata['complexity']) || 'moderate';
-      const estimatedHours = parseInt(metadataMatch?.[3] || '4');
-      const assigneeType = (metadataMatch?.[4] as TaskMetadata['assigneeType']) || 'either';
-      
-      // Extract description
-      const descMatch = taskText.match(/### Description\s*\n(.*?)(?=### |$)/s);
-      const description = descMatch?.[1]?.trim() || '';
-      
-      // Extract acceptance criteria
-      const criteriaMatch = taskText.match(/### Acceptance Criteria\s*\n(.*?)(?=### |$)/s);
-      const criteriaText = criteriaMatch?.[1] || '';
-      const acceptanceCriteria = criteriaText
-        .split('\n')
-        .filter(line => line.includes('- [ ]'))
-        .map(line => line.replace(/- \[ \]/, '').trim())
-        .filter(Boolean);
-      
-      // Extract skills
-      const skillsMatch = taskText.match(/### Skills Required\s*\n(.*?)(?=### |$)/s);
-      const skillsText = skillsMatch?.[1] || '';
-      const skills = skillsText
-        .split('\n')
-        .filter(line => line.includes('-'))
-        .map(line => line.replace(/^-\s*/, '').trim())
-        .filter(Boolean);
-      
-      // Extract dependencies
-      const depsMatch = taskText.match(/### Dependencies\s*\n(.*?)(?=### |$)/s);
-      const depsText = depsMatch?.[1] || '';
-      const dependencies = depsText
-        .split('\n')
-        .filter(line => line.includes('-'))
-        .map(line => line.replace(/^-\s*/, '').trim())
-        .filter(Boolean);
-      
-      const task: AITask = {
-        id: `task-${Date.now()}-${index}`,
-        title,
-        description,
-        acceptanceCriteria,
+      // Ensure each task has required fields
+      const validatedTasks: Task[] = parsed.tasks.map((task: any, index: number) => ({
+        id: task.id || `task-${index + 1}`,
+        title: task.title || 'Untitled Task',
+        description: task.description || '',
+        priority: this.validatePriority(task.priority),
+        assignee: this.validateAssignee(task.assignee),
+        complexity: Math.max(1, Math.min(10, task.complexity || 5)),
+        timeEstimate: task.timeEstimate || '1 day',
+        phase: task.phase || 'Implementation',
+        risks: Array.isArray(task.risks) ? task.risks : [],
+        acceptanceCriteria: Array.isArray(task.acceptanceCriteria) ? task.acceptanceCriteria : [],
+        dependencies: Array.isArray(task.dependencies) ? task.dependencies : [],
+        status: 'todo' as const,
+      }));
+
+      return {
+        tasks: validatedTasks,
+        summary: parsed.summary || 'Task breakdown generated successfully',
         metadata: {
-          priority,
-          complexity,
-          estimatedHours,
-          assigneeType,
-          skills,
-          dependencies,
-          riskLevel: complexity === 'expert' ? 'high' : complexity === 'complex' ? 'medium' : 'low',
-          phase: `Phase ${Math.floor(index / 3) + 1}`,
+          totalTasks: validatedTasks.length,
+          phases: parsed.metadata?.phases || ['Implementation'],
+          estimatedDuration: parsed.metadata?.estimatedDuration || 'TBD',
+          complexityScore: parsed.metadata?.complexityScore || 5,
         },
-        markdown: taskText,
+        success: true,
       };
       
-      return task;
-      
     } catch (error) {
-      console.error('❌ Error parsing task:', error);
-      return null;
+      console.error('Failed to parse AI response:', error);
+      return {
+        tasks: [],
+        summary: '',
+        metadata: {
+          totalTasks: 0,
+          phases: [],
+          estimatedDuration: '0',
+          complexityScore: 0,
+        },
+        success: false,
+        error: 'Failed to parse AI response',
+      };
     }
   }
 
-  private extractSummary(text: string): string {
-    const summaryMatch = text.match(/SUMMARY[:\n](.*?)(?=RISK|RECOMMENDATIONS|$)/s);
-    return summaryMatch?.[1]?.trim() || '';
+  private validatePriority(priority: any): 'low' | 'medium' | 'high' | 'critical' {
+    const validPriorities = ['low', 'medium', 'high', 'critical'];
+    return validPriorities.includes(priority) ? priority : 'medium';
   }
 
-  private extractRiskAssessment(text: string): string {
-    const riskMatch = text.match(/RISK[:\n](.*?)(?=RECOMMENDATIONS|$)/s);
-    return riskMatch?.[1]?.trim() || '';
-  }
-
-  private extractRecommendations(text: string): string[] {
-    const recsMatch = text.match(/RECOMMENDATIONS[:\n](.*?)$/s);
-    const recsText = recsMatch?.[1] || '';
-    return recsText
-      .split('\n')
-      .filter(line => line.includes('-'))
-      .map(line => line.replace(/^-\s*/, '').trim())
-      .filter(Boolean);
+  private validateAssignee(assignee: any): 'human' | 'ai' | 'team' {
+    const validAssignees = ['human', 'ai', 'team'];
+    return validAssignees.includes(assignee) ? assignee : 'human';
   }
 }
