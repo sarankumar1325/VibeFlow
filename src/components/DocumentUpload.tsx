@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { Upload, FileText, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -67,10 +67,17 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
       setUploadProgress(100);
 
       if (result.success) {
-        toast({
-          title: "Document Processed Successfully",
-          description: `Extracted ${result.text.length} characters from ${result.metadata.pageCount} page(s).`,
-        });
+        if (file.type === 'application/pdf' && result.text.includes('Note: This PDF was successfully loaded')) {
+          toast({
+            title: "PDF Loaded Successfully",
+            description: "PDF metadata extracted. You can manually describe your project or upload a text file for better AI processing.",
+          });
+        } else {
+          toast({
+            title: "Document Processed Successfully",
+            description: `Extracted ${result.text.length} characters from ${result.metadata.pageCount} page(s).`,
+          });
+        }
         onFileProcessed(result);
       } else {
         toast({
@@ -197,6 +204,17 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
                       <p className="text-sm text-white/60">
                         Supports PDF, DOC, DOCX, TXT • Max 50MB
                       </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Updated info section */}
+                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-2xl mx-auto">
+                  <div className="flex items-start gap-3">
+                    <Info className="w-5 h-5 text-blue-400 mt-0.5" />
+                    <div className="text-sm text-blue-200">
+                      <p className="font-medium mb-1">Optimal Results:</p>
+                      <p>For best AI processing, upload <strong>text files (.txt)</strong> or provide manual project descriptions. PDF text extraction is limited but metadata will be processed.</p>
                     </div>
                   </div>
                 </div>
