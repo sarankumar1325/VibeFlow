@@ -1,11 +1,8 @@
 
 import * as pdfjsLib from 'pdfjs-dist';
 
-// Configure worker for Vite environment
-pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.js',
-  import.meta.url
-).toString();
+// Configure worker for Vite environment - use CDN to avoid bundling issues
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
 export interface PDFExtractionResult {
   text: string;
