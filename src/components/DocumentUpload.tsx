@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Upload, FileText, AlertCircle, CheckCircle2, Info } from 'lucide-react';
 import { Card } from '@/components/ui/card';
@@ -67,15 +66,20 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
       setUploadProgress(100);
 
       if (result.success) {
-        if (file.type === 'application/pdf' && result.text.includes('Note: This PDF was successfully loaded')) {
-          toast({
-            title: "PDF Loaded Successfully",
-            description: "PDF metadata extracted. You can manually describe your project or upload a text file for better AI processing.",
-          });
-        } else {
+        const hasActualContent = result.text && 
+          result.text.length > 100 && 
+          !result.text.includes('Limited text extraction') &&
+          !result.text.includes('Warning: Limited text extraction');
+
+        if (hasActualContent) {
           toast({
             title: "Document Processed Successfully",
             description: `Extracted ${result.text.length} characters from ${result.metadata.pageCount} page(s).`,
+          });
+        } else {
+          toast({
+            title: "PDF Loaded - Limited Text Extraction",
+            description: "Some content may require manual input. The AI will work with extracted metadata and any available text.",
           });
         }
         onFileProcessed(result);
@@ -162,7 +166,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
                 
                 <div className="space-y-3">
                   <h3 className="text-xl font-display font-semibold text-white">
-                    {uploadProgress === 100 ? 'Processing Complete!' : 'Processing Document...'}
+                    {uploadProgress === 100 ? 'Processing Complete!' : 'Extracting Text from PDF...'}
                   </h3>
                   {selectedFile && (
                     <p className="text-sm text-white/70">{selectedFile.name}</p>
@@ -208,13 +212,12 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
                   </div>
                 </div>
 
-                {/* Updated info section */}
-                <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4 max-w-2xl mx-auto">
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 max-w-2xl mx-auto">
                   <div className="flex items-start gap-3">
-                    <Info className="w-5 h-5 text-blue-400 mt-0.5" />
-                    <div className="text-sm text-blue-200">
-                      <p className="font-medium mb-1">Optimal Results:</p>
-                      <p>For best AI processing, upload <strong>text files (.txt)</strong> or provide manual project descriptions. PDF text extraction is limited but metadata will be processed.</p>
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5" />
+                    <div className="text-sm text-emerald-200">
+                      <p className="font-medium mb-1">Enhanced PDF Processing:</p>
+                      <p>Now with improved text extraction capabilities. Upload your PDF and the AI will extract and analyze the actual content to generate meaningful tasks.</p>
                     </div>
                   </div>
                 </div>

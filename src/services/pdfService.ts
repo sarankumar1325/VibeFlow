@@ -1,5 +1,9 @@
 
-import { PDFDocument } from 'pdf-lib';
+import * as pdfjsLib from 'pdfjs-dist';
+import 'pdfjs-dist/build/pdf.worker.entry';
+
+// Set worker source
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`;
 
 export interface PDFExtractionResult {
   text: string;
@@ -19,50 +23,64 @@ export interface PDFExtractionResult {
 export class PDFService {
   static async extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
     try {
-      console.log('🔄 Starting PDF extraction with pdf-lib for:', file.name);
+      console.log('🔄 Starting PDF text extraction for:', file.name);
       
       const arrayBuffer = await file.arrayBuffer();
       console.log('📄 File loaded, size:', arrayBuffer.byteLength, 'bytes');
       
-      const pdfDoc = await PDFDocument.load(arrayBuffer);
-      console.log('📚 PDF loaded successfully, pages:', pdfDoc.getPageCount());
+      // Load PDF document
+      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+      const pdfDoc = await loadingTask.promise;
+      
+      console.log('📚 PDF loaded successfully, pages:', pdfDoc.numPages);
       
       // Extract metadata
-      const title = pdfDoc.getTitle() || 'Untitled Document';
-      const author = pdfDoc.getAuthor() || 'Unknown Author';
-      const subject = pdfDoc.getSubject() || '';
-      const keywords = pdfDoc.getKeywords() || '';
-      
-      // For text extraction with pdf-lib, we need to use a different approach
-      // pdf-lib is primarily for PDF creation/modification, not text extraction
-      // Let's try to extract what we can and provide a fallback
+      const metadata = await pdfDoc.getMetadata();
+      const title = metadata?.info?.Title || 'Untitled Document';
+      const author = metadata?.info?.Author || 'Unknown Author';
+      const subject = metadata?.info?.Subject || '';
+      const keywords = metadata?.info?.Keywords || '';
       
       let extractedText = '';
       
-      try {
-        // pdf-lib doesn't have built-in text extraction
-        // We'll provide metadata and encourage manual text input as fallback
-        const pageCount = pdfDoc.getPageCount();
-        
-        extractedText = `PDF Document Analysis:
-Title: ${title}
+      // Extract text from all pages
+      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+        try {
+          console.log(`📖 Processing page ${pageNum}/${pdfDoc.numPages}`);
+          
+          const page = await pdfDoc.getPage(pageNum);
+          const textContent = await page.getTextContent();
+          
+          // Combine all text items from the page
+          const pageText = textContent.items
+            .map((item: any) => item.str)
+            .join(' ');
+          
+          if (pageText.trim()) {
+            extractedText += `\n\n--- Page ${pageNum} ---\n${pageText.trim()}`;
+          }
+          
+        } catch (pageError) {
+          console.warn(`⚠️ Error processing page ${pageNum}:`, pageError);
+          extractedText += `\n\n--- Page ${pageNum} ---\n[Error extracting text from this page]`;
+        }
+      }
+      
+      // Clean up the extracted text
+      extractedText = extractedText.trim();
+      
+      if (!extractedText || extractedText.length < 10) {
+        extractedText = `PDF Document: ${title}
 Author: ${author}
 Subject: ${subject}
 Keywords: ${keywords}
-Pages: ${pageCount}
+Pages: ${pdfDoc.numPages}
 
-Note: This PDF was successfully loaded but text extraction requires manual input or OCR processing.
-Please describe your project requirements manually or upload a text file with the content.`;
-
-        console.log('✅ PDF metadata extracted successfully');
-        
-      } catch (textError) {
-        console.warn('⚠️ Text extraction not available with pdf-lib:', textError);
-        extractedText = `PDF loaded successfully but automatic text extraction is not available.
-Please provide the project requirements manually or upload a text version of the document.`;
+⚠️ Warning: Limited text extraction. This PDF may contain images, scanned content, or complex formatting.
+Please provide the project requirements manually or upload a text version for better AI processing.`;
       }
       
-      console.log('🎉 PDF processing completed');
+      console.log('✅ PDF text extraction completed, extracted:', extractedText.length, 'characters');
       
       return {
         text: extractedText,
@@ -71,7 +89,7 @@ Please provide the project requirements manually or upload a text version of the
           author,
           subject,
           keywords,
-          pageCount: pdfDoc.getPageCount(),
+          pageCount: pdfDoc.numPages,
           fileSize: file.size,
           fileName: file.name,
         },
@@ -88,7 +106,7 @@ Please provide the project requirements manually or upload a text version of the
           fileName: file.name,
         },
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error occurred',
+        error: error instanceof Error ? error.message : 'Failed to extract text from PDF',
       };
     }
   }
