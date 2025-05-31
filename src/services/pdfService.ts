@@ -2,7 +2,7 @@
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure worker for Vite environment - use CDN to avoid bundling issues
-pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 export interface PDFExtractionResult {
   text: string;
@@ -29,6 +29,33 @@ interface PDFMetadata {
   };
 }
 
+const extractTextFromPDF = async (file: File): Promise<string> => {
+  try {
+    // Convert the File to ArrayBuffer
+    const arrayBuffer = await file.arrayBuffer();
+    
+    // Load the PDF document
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    
+    let fullText = '';
+    
+    // Iterate through each page to extract text
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const textItems = textContent.items.map((item: any) => item.str).join(' ');
+      
+      fullText += textItems + '\n\n';
+    }
+    
+    console.log("Extracted PDF text:", fullText.substring(0, 100) + "...");
+    return fullText;
+  } catch (error) {
+    console.error("Error extracting PDF text:", error);
+    throw new Error("Failed to extract text from PDF");
+  }
+};
+
 export class PDFService {
   static async extractTextFromPDF(file: File): Promise<PDFExtractionResult> {
     try {
@@ -50,49 +77,13 @@ export class PDFService {
       const subject = metadata?.info?.Subject || '';
       const keywords = metadata?.info?.Keywords || '';
       
-      let extractedText = '';
-      
-      // Extract text from all pages
-      for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
-        try {
-          console.log(`📖 Processing page ${pageNum}/${pdfDoc.numPages}`);
-          
-          const page = await pdfDoc.getPage(pageNum);
-          const textContent = await page.getTextContent();
-          
-          // Combine all text items from the page
-          const pageText = textContent.items
-            .map((item: any) => item.str)
-            .join(' ');
-          
-          if (pageText.trim()) {
-            extractedText += `\n\n--- Page ${pageNum} ---\n${pageText.trim()}`;
-          }
-          
-        } catch (pageError) {
-          console.warn(`⚠️ Error processing page ${pageNum}:`, pageError);
-          extractedText += `\n\n--- Page ${pageNum} ---\n[Error extracting text from this page]`;
-        }
-      }
-      
-      // Clean up the extracted text
-      extractedText = extractedText.trim();
-      
-      if (!extractedText || extractedText.length < 10) {
-        extractedText = `PDF Document: ${title}
-Author: ${author}
-Subject: ${subject}
-Keywords: ${keywords}
-Pages: ${pdfDoc.numPages}
-
-⚠️ Warning: Limited text extraction. This PDF may contain images, scanned content, or complex formatting.
-Please provide the project requirements manually or upload a text version for better AI processing.`;
-      }
+      // Use the improved text extraction logic
+      const extractedText = await extractTextFromPDF(file);
       
       console.log('✅ PDF text extraction completed, extracted:', extractedText.length, 'characters');
       
       return {
-        text: extractedText,
+        text: extractedText.trim(),
         metadata: {
           title,
           author,
