@@ -4,6 +4,8 @@
 
 ![VibeFlow Logo](public/favicon.svg)
 
+https://github.com/user-attachments/assets/619202b3-c5a6-4986-a56f-6d27b54ed796
+
 **An intelligent AI-powered task management and documentation generation platform**
 
 [![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-vibeflowdev.vercel.app-blue?style=for-the-badge)](https://vibeflowdev.vercel.app)
