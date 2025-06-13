@@ -132,72 +132,160 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
   const handleClick = () => {
     fileInputRef.current?.click();
   };
+
   return (
     <div className="w-full max-w-4xl mx-auto" data-upload-section>
       <Card 
         className={`
-          glass-effect transition-all duration-300 ease-out
-          ${isDragOver ? 'border-vibeflow-violet/50 bg-vibeflow-violet/5 scale-[1.01]' : 'border-white/20 hover:border-vibeflow-violet/30'}
+          relative overflow-hidden transition-all duration-700 ease-out group
+          ${isDragOver ? 'scale-105 shadow-2xl' : 'hover:scale-[1.02]'}
           ${isProcessing ? 'opacity-50 pointer-events-none' : ''}
-          relative overflow-hidden
+          animate-morphing-border
         `}
+        style={{
+          background: isDragOver 
+            ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(59, 130, 246, 0.15), rgba(16, 185, 129, 0.1))' 
+            : 'rgba(255, 255, 255, 0.05)',
+          backdropFilter: 'blur(20px)',
+          border: isDragOver 
+            ? '3px solid transparent'
+            : '2px solid rgba(255, 255, 255, 0.1)',
+          borderImage: isDragOver 
+            ? 'linear-gradient(45deg, #8B5CF6, #3B82F6, #10B981, #A855F7) 1'
+            : 'none'
+        }}
         onDrop={handleDrop}
         onDragOver={(e) => e.preventDefault()}
         onDragEnter={() => setIsDragOver(true)}
         onDragLeave={() => setIsDragOver(false)}
       >
-        {/* Simple Floating Orbs */}
-        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Aurora Background Animation */}
+        <div className={`
+          absolute inset-0 opacity-30 transition-opacity duration-700
+          ${isDragOver ? 'opacity-80' : 'group-hover:opacity-50'}
+          aurora-bg animate-aurora
+        `} />
+        
+        {/* Liquid Flow Orbs */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div className={`
-            absolute w-32 h-32 top-4 left-4 rounded-full
-            bg-gradient-to-br from-vibeflow-violet/20 to-vibeflow-blue/10
-            blur-2xl transition-all duration-500
-            ${isDragOver ? 'scale-125 opacity-40' : 'opacity-20'}
+            absolute w-40 h-40 -top-10 -left-10 rounded-full 
+            bg-gradient-to-br from-vibeflow-violet/30 via-vibeflow-blue/20 to-transparent
+            animate-liquid-flow animate-breathe
+            ${isDragOver ? 'scale-150 opacity-60' : 'opacity-20'}
+            transition-all duration-700
           `} />
           <div className={`
-            absolute w-24 h-24 bottom-8 right-8 rounded-full
-            bg-gradient-to-tl from-vibeflow-emerald/15 to-vibeflow-purple/10
-            blur-xl transition-all duration-500 delay-100
-            ${isDragOver ? 'scale-110 opacity-30' : 'opacity-15'}
-          `} />
-        </div>        <div className="p-8 md:p-12 relative z-10">
+            absolute w-32 h-32 -bottom-8 -right-8 rounded-full 
+            bg-gradient-to-tl from-vibeflow-emerald/25 via-vibeflow-blue/15 to-transparent
+            animate-liquid-flow animate-breathe
+            ${isDragOver ? 'scale-125 opacity-50' : 'opacity-15'}
+            transition-all duration-700 delay-300
+          `} style={{ animationDelay: '2s' }} />
+          <div className={`
+            absolute w-24 h-24 top-1/3 right-1/4 rounded-full 
+            bg-gradient-to-br from-vibeflow-purple/20 via-vibeflow-violet/15 to-transparent
+            animate-liquid-flow animate-breathe
+            ${isDragOver ? 'scale-175 opacity-70' : 'opacity-10'}
+            transition-all duration-700 delay-500
+          `} style={{ animationDelay: '4s' }} />
+        </div>
+
+        {/* Energy Field Particles */}
+        {isDragOver && (
+          <div className="absolute inset-0 pointer-events-none">
+            {[...Array(16)].map((_, i) => (
+              <div
+                key={i}
+                className={`
+                  absolute w-3 h-3 rounded-full animate-particle-dance
+                  ${i % 4 === 0 ? 'bg-vibeflow-violet/60' : 
+                    i % 4 === 1 ? 'bg-vibeflow-blue/60' : 
+                    i % 4 === 2 ? 'bg-vibeflow-emerald/60' : 'bg-vibeflow-purple/60'}
+                `}
+                style={{
+                  left: `${10 + (i * 5)}%`,
+                  top: `${15 + Math.sin(i * 0.5) * 25}%`,
+                  animationDelay: `${i * 150}ms`,
+                  animationDuration: `${2 + (i % 3)}s`
+                }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Ripple Effects */}
+        {isDragOver && (
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-8 border-2 border-vibeflow-violet/40 rounded-full animate-ripple-expand" />
+            <div className="absolute inset-12 border-2 border-vibeflow-blue/30 rounded-full animate-ripple-expand" style={{ animationDelay: '0.3s' }} />
+            <div className="absolute inset-16 border-2 border-vibeflow-emerald/20 rounded-full animate-ripple-expand" style={{ animationDelay: '0.6s' }} />
+          </div>
+        )}
+
+        {/* Cascade Glow Effect */}
+        <div className={`
+          absolute inset-0 rounded-xl transition-all duration-500
+          ${isDragOver ? 'animate-cascade-glow' : ''}
+        `} />
+
+        {/* Holographic Grid */}
+        <div className={`
+          absolute inset-0 opacity-0 transition-opacity duration-700
+          ${isDragOver ? 'opacity-30' : 'group-hover:opacity-10'}
+          animate-hologram
+        `} style={{
+          backgroundImage: `
+            linear-gradient(rgba(139, 92, 246, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(139, 92, 246, 0.1) 1px, transparent 1px)
+          `,
+          backgroundSize: '20px 20px'
+        }} />
+
+        <div className="p-8 md:p-12 relative z-10">
           <div className="relative text-center">
             {uploadProgress > 0 ? (
-              <div className="space-y-6 animate-fade-in">
+              <div className="space-y-6 animate-scale-in">
                 <div className={`
                   w-20 h-20 mx-auto bg-vibeflow-gradient rounded-full flex items-center justify-center
+                  ${uploadProgress === 100 ? 'animate-magnetic-pull' : 'animate-energy-pulse'}
                   transition-all duration-300
-                  ${uploadProgress === 100 ? 'animate-bounce' : 'animate-pulse'}
                 `}>
                   {uploadProgress === 100 ? (
-                    <CheckCircle2 className="w-10 h-10 text-white" />
+                    <CheckCircle2 className="w-10 h-10 text-white animate-icon-morph" />
                   ) : (
-                    <FileText className="w-10 h-10 text-white animate-spin" />
+                    <FileText className="w-10 h-10 text-white animate-icon-morph" />
                   )}
                 </div>
                 
                 <div className="space-y-3">
-                  <h3 className="text-xl font-display font-semibold text-white">
+                  <h3 className={`
+                    text-xl font-display font-semibold text-white
+                    ${uploadProgress === 100 ? 'animate-text-glitch' : ''}
+                  `}>
                     {uploadProgress === 100 ? 'Processing Complete!' : 'Extracting Text from PDF...'}
                   </h3>
                   {selectedFile && (
-                    <p className="text-sm text-white/70">{selectedFile.name}</p>
+                    <p className="text-sm text-white/70 animate-fade-in">{selectedFile.name}</p>
                   )}
-                  <Progress value={uploadProgress} className="w-full max-w-md mx-auto" />
+                  <div className="relative">
+                    <Progress value={uploadProgress} className="w-full max-w-md mx-auto" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-vibeflow-violet via-vibeflow-blue to-vibeflow-emerald opacity-20 rounded-full animate-shimmer" />
+                  </div>
                   <p className="text-sm text-white/60">{uploadProgress}% complete</p>
                 </div>
               </div>
             ) : (
               <div className="space-y-6 animate-fade-in">
-                {/* Simple Upload Icon */}
+                {/* Enhanced Upload Icon */}
                 <div className={`
                   w-20 h-20 mx-auto bg-vibeflow-gradient rounded-full flex items-center justify-center
-                  transition-all duration-300 hover:scale-110
-                  ${isDragOver ? 'scale-125 animate-pulse' : ''}
+                  transition-all duration-500 group-hover:scale-110
+                  ${isDragOver ? 'scale-125 animate-magnetic-pull' : 'animate-breathe'}
                 `}>
                   <Upload className={`
                     w-10 h-10 text-white transition-all duration-300
-                    ${isDragOver ? 'animate-bounce' : ''}
+                    ${isDragOver ? 'animate-icon-morph' : 'group-hover:animate-icon-morph'}
                   `} />
                 </div>
                 
@@ -210,28 +298,44 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
                   </p>
                 </div>
 
-                {/* Simple Drop Zone */}
+                {/* Enhanced Drop Zone */}
                 <div 
                   className={`
                     relative border-2 border-dashed rounded-xl p-8 cursor-pointer
-                    transition-all duration-300 backdrop-blur-sm
+                    transition-all duration-500 backdrop-blur-sm
                     ${isDragOver 
-                      ? 'border-vibeflow-violet bg-vibeflow-violet/10 scale-[1.02]' 
-                      : 'border-white/30 hover:border-vibeflow-violet/50 hover:bg-white/5'
+                      ? 'border-vibeflow-violet bg-vibeflow-violet/15 scale-105 shadow-2xl shadow-vibeflow-violet/30' 
+                      : 'border-white/30 hover:border-vibeflow-violet/50 hover:bg-white/5 hover:scale-[1.02]'
                     }
+                    animate-energy-pulse
                   `}
                   onClick={handleClick}
                 >
-                  <div className="space-y-4">
+                  {/* Enhanced Background */}
+                  <div className={`
+                    absolute inset-0 rounded-xl transition-all duration-500
+                    ${isDragOver ? 'aurora-bg animate-aurora' : ''}
+                  `} />
+                  
+                  {/* Magnetic Field */}
+                  {isDragOver && (
+                    <div className="absolute inset-0 rounded-xl">
+                      <div className="absolute inset-4 border border-vibeflow-violet/40 rounded-lg animate-magnetic-pull" />
+                      <div className="absolute inset-6 border border-vibeflow-blue/30 rounded-lg animate-magnetic-pull" style={{ animationDelay: '0.2s' }} />
+                      <div className="absolute inset-8 border border-vibeflow-emerald/20 rounded-lg animate-magnetic-pull" style={{ animationDelay: '0.4s' }} />
+                    </div>
+                  )}
+                  
+                  <div className="relative z-10 space-y-4">
                     <div className="flex justify-center">
                       <div className={`
                         w-16 h-16 bg-white/10 rounded-lg flex items-center justify-center
-                        transition-all duration-300
-                        ${isDragOver ? 'bg-vibeflow-violet/20 scale-110' : 'hover:bg-white/15 hover:scale-105'}
+                        transition-all duration-500
+                        ${isDragOver ? 'bg-vibeflow-violet/30 scale-125 animate-magnetic-pull' : 'group-hover:bg-white/15 group-hover:scale-105 animate-breathe'}
                       `}>
                         <FileText className={`
                           w-8 h-8 text-vibeflow-violet transition-all duration-300
-                          ${isDragOver ? 'text-white animate-pulse' : ''}
+                          ${isDragOver ? 'animate-icon-morph text-white' : 'group-hover:animate-icon-morph'}
                         `} />
                       </div>
                     </div>
@@ -241,14 +345,16 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
                         text-lg font-medium mb-2 transition-all duration-300
                         ${isDragOver ? 'text-white scale-105' : 'text-white'}
                       `}>
-                        Drop your files here or <span className="gradient-text font-semibold">browse</span>
+                        Drop your files here or <span className="gradient-text font-semibold animate-glow">browse</span>
                       </p>
                       <p className="text-sm text-white/60">
                         Supports PDF, DOC, DOCX, TXT • Max 50MB
                       </p>
                     </div>
                   </div>
-                </div>                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 max-w-2xl mx-auto">
+                </div>
+
+                <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-4 max-w-2xl mx-auto">
                   <div className="flex items-start gap-3">
                     <CheckCircle2 className="w-5 h-5 text-emerald-400 mt-0.5" />
                     <div className="text-sm text-emerald-200">
@@ -260,15 +366,15 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({ onFileProcessed, isProc
 
                 <div className="flex flex-wrap justify-center gap-3 text-sm text-white/50">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-vibeflow-emerald rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-vibeflow-emerald rounded-full animate-breathe"></div>
                     Enterprise Ready
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-vibeflow-blue rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-vibeflow-blue rounded-full animate-breathe" style={{ animationDelay: '0.5s' }}></div>
                     AI-Powered
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-vibeflow-purple rounded-full animate-pulse"></div>
+                    <div className="w-2 h-2 bg-vibeflow-purple rounded-full animate-breathe" style={{ animationDelay: '1s' }}></div>
                     Optimized for Scale
                   </div>
                 </div>

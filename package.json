@@ -11,6 +11,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.31.8",
     "@hookform/resolvers": "^3.9.0",
     "@langchain/core": "^0.3.57",
     "@langchain/google-genai": "^0.2.10",
